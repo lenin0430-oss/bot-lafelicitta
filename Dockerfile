@@ -3,6 +3,7 @@ FROM node:18-bullseye-slim
 RUN apt-get update && apt-get install -y \
     ca-certificates \
     wget \
+    git \
     --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
