@@ -1,10 +1,8 @@
-const makeWASocket = require("@whiskeysockets/baileys").default;
-const { useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion } = require("@whiskeysockets/baileys");
+const { Client, LocalAuth } = require("whatsapp-web.js");
 const Anthropic = require("@anthropic-ai/sdk");
-const pino = require("pino");
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-const SESSION_PATH = process.env.SESSION_PATH || "./session";
+const MENU_URL = "https://menu-lafelicitta.vercel.app";
 
 function estaAbierto() {
   const ahora = new Date().toLocaleString("en-US", { timeZone: "America/Santiago" });
@@ -103,112 +101,76 @@ REGLAS:
   return respuesta;
 }
 
-let sock;
-let intentosReconexion = 0;
+const client = new Client({
+  authStrategy: new LocalAuth({
+    dataPath: process.env.SESSION_PATH || "./.wwebjs_auth",
+  }),
+  puppeteer: {
+    headless: true,
+    executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
+    protocolTimeout: 120000,
+    args: [
+      "--no-sandbox",
+      "--disable-setuid-sandbox",
+      "--disable-dev-shm-usage",
+      "--disable-accelerated-2d-canvas",
+      "--no-first-run",
+      "--no-zygote",
+      "--disable-gpu",
+    ],
+  },
+});
 
-async function conectar() {
+client.on("qr", (qr) => {
+  console.log("📱 QR generado");
+  if (global.actualizarQR) global.actualizarQR(qr);
+});
+
+client.on("ready", () => {
+  console.log("✅ Bot listo");
+  if (global.actualizarEstado) global.actualizarEstado("listo");
+});
+
+client.on("authenticated", () => {
+  console.log("✅ Autenticado");
+  if (global.actualizarEstado) global.actualizarEstado("autenticado");
+});
+
+client.on("auth_failure", (msg) => {
+  console.error("❌ Error auth:", msg);
+  if (global.actualizarEstado) global.actualizarEstado("error_auth");
+});
+
+client.on("disconnected", (reason) => {
+  console.log("⚠️ Desconectado:", reason);
+  if (global.actualizarEstado) global.actualizarEstado("desconectado");
+});
+
+client.on("message", async (msg) => {
   try {
-    const { state, saveCreds } = await useMultiFileAuthState(SESSION_PATH);
-    const { version } = await fetchLatestBaileysVersion();
+    if (msg.fromMe) return;
+    if (msg.from.includes("@g.us")) return;
 
-    sock = makeWASocket({
-      version,
-      auth: state,
-      logger: pino({ level: "silent" }),
-      printQRInTerminal: false,
-      browser: ["Ubuntu", "Chrome", "20.0.04"],
-      connectTimeoutMs: 60000,
-      qrTimeout: 40000,
-      defaultQueryTimeoutMs: 60000,
-      retryRequestDelayMs: 2000,
-    });
+    const numero = msg.from;
+    const texto = msg.body || "";
+    console.log(`📩 ${numero}: ${texto}`);
 
-    sock.ev.on("creds.update", saveCreds);
+    if (!estaAbierto()) {
+      await msg.reply(`⏰ Hola! *La Felicitta* está cerrada ahora.\n\n🕐 Horario: todos los días 08:30 – 00:00\n📍 Barros Arana 504, Iquique`);
+      return;
+    }
 
-    sock.ev.on("connection.update", ({ connection, lastDisconnect, qr }) => {
-      if (qr) {
-        console.log("📱 QR generado — escanea en la URL del bot");
-        intentosReconexion = 0;
-        if (global.actualizarQR) global.actualizarQR(qr);
-      }
-
-      if (connection === "open") {
-        console.log("✅ Bot conectado a WhatsApp");
-        intentosReconexion = 0;
-        if (global.actualizarEstado) global.actualizarEstado("listo");
-      }
-
-      if (connection === "close") {
-        const codigo = lastDisconnect?.error?.output?.statusCode;
-        const esLogout = codigo === DisconnectReason.loggedOut || codigo === 401;
-        
-        console.log(`⚠️ Desconectado (código: ${codigo})`);
-        if (global.actualizarEstado) global.actualizarEstado("desconectado");
-
-        if (esLogout) {
-          console.log("🔑 Sesión cerrada — necesitas escanear el QR de nuevo");
-          intentosReconexion = 0;
-          setTimeout(conectar, 3000);
-        } else {
-          intentosReconexion++;
-          const delay = Math.min(5000 * intentosReconexion, 30000);
-          console.log(`🔄 Reconectando en ${delay/1000}s (intento ${intentosReconexion})`);
-          setTimeout(conectar, delay);
-        }
-      }
-    });
-
-    sock.ev.on("messages.upsert", async ({ messages, type }) => {
-      if (type !== "notify") return;
-      const msg = messages[0];
-      if (!msg?.message || msg.key.fromMe) return;
-
-      const from = msg.key.remoteJid;
-      if (!from || from.includes("@g.us")) return;
-
-      const texto =
-        msg.message.conversation ||
-        msg.message.extendedTextMessage?.text ||
-        msg.message.imageMessage?.caption ||
-        "";
-
-      if (!texto.trim()) return;
-
-      console.log(`📩 Mensaje de ${from}: ${texto}`);
-
-      try {
-        await sock.readMessages([msg.key]);
-
-        if (!estaAbierto()) {
-          await sock.sendMessage(from, {
-            text: `⏰ Hola! *La Felicitta* está cerrada ahora.\n\n🕐 Horario: todos los días 08:30 – 00:00\n📍 Barros Arana 504, Iquique`,
-          });
-          return;
-        }
-
-        const respuesta = await responderConIA(from, texto);
-        await sock.sendMessage(from, { text: respuesta });
-        console.log("✅ Respuesta enviada");
-
-      } catch (error) {
-        console.error("❌ Error al responder:", error.message);
-        try {
-          await sock.sendMessage(from, {
-            text: `Hola! Somos *La Felicitta* 🍔\nEstamos atendiendo tu mensaje, escríbenos en un momento.\n📍 Barros Arana 504 · 08:30–00:00`,
-          });
-        } catch (e) {
-          console.error("❌ Error en respaldo:", e.message);
-        }
-      }
-    });
+    const respuesta = await responderConIA(numero, texto);
+    await msg.reply(respuesta);
+    console.log(`✅ Respuesta enviada`);
 
   } catch (error) {
-    console.error("❌ Error al conectar:", error.message);
-    setTimeout(conectar, 10000);
+    console.error("❌ Error:", error.message);
+    try {
+      await msg.reply(`Hola! Somos *La Felicitta* 🍔\nEstamos atendiendo tu pedido, escríbenos en un momento.\n📍 Barros Arana 504 · 08:30–00:00`);
+    } catch (e) {}
   }
-}
+});
 
-console.log("🚀 Iniciando bot Baileys con IA Claude...");
-conectar();
-
-module.exports = { getSocket: () => sock };
+console.log("🚀 Iniciando bot con IA Claude + menú completo...");
+client.initialize();
