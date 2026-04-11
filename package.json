@@ -1,16 +1,15 @@
 {
   "name": "bot-pedidos-lafelicitta",
-  "version": "2.0.0",
+  "version": "1.0.0",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.39.0",
-    "@whiskeysockets/baileys": "^6.7.16",
     "express": "^4.18.2",
-    "pino": "^9.0.0",
-    "qrcode": "^1.5.3"
+    "qrcode": "^1.5.3",
+    "whatsapp-web.js": "^1.23.0"
   },
   "engines": {
     "node": ">=18.0.0"
