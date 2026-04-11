@@ -2,7 +2,6 @@ const { Client, LocalAuth } = require("whatsapp-web.js");
 const Anthropic = require("@anthropic-ai/sdk");
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-const MENU_URL = "https://menu-lafelicitta.vercel.app";
 
 function estaAbierto() {
   const ahora = new Date().toLocaleString("en-US", { timeZone: "America/Santiago" });
@@ -33,7 +32,14 @@ DATOS:
 - Horario: todos los días 08:30 – 00:00
 - Teléfono: +56 9 63376893
 - Pagos: transferencia, efectivo, tarjetas (solo local)
-- Delivery disponible en Iquique
+
+DELIVERY — ZONAS Y PRECIOS:
+- Centro de Iquique: $2.500
+- Sector Tadeo Hankee: $3.000
+- Sector Sur de Iquique: $4.000
+- Otras zonas: desde $2.500 (varía según distancia)
+- Tiempo de preparación: aproximadamente 20 minutos
+- Si el cliente pregunta cuándo llega, dile: "Tu pedido estará listo en aprox. 20 minutos de preparación más el tiempo de traslado según tu zona"
 
 MENÚ COMPLETO CON PRECIOS:
 
@@ -75,16 +81,24 @@ Coca-Cola/Sprite/Fanta 500cc $1.200 | Bebida 1.5L $2.000 | Jugo Naranja $1.800 |
 
 CÓMO TOMAR EL PEDIDO:
 1. Ayuda al cliente a elegir con precios
-2. Confirma platos, cantidades y calcula el TOTAL
-3. Pregunta retiro o delivery (si delivery, pedir dirección)
+2. Confirma platos y cantidades
+3. Pregunta retiro o delivery
+   - Si es DELIVERY: pedir dirección, identificar zona y agregar el costo de delivery al total
+   - Si es RETIRO: sin costo adicional
 4. Pide nombre del cliente
 5. Confirma método de pago
-6. Muestra resumen con TOTAL y di "¡Pedido recibido! El equipo de La Felicitta lo está preparando 🍔"
+6. Muestra RESUMEN FINAL con:
+   - Lista de productos con precios
+   - Costo de delivery (si aplica)
+   - TOTAL incluyendo delivery
+   - Tiempo estimado: "Tu pedido estará listo en aproximadamente 20 minutos 🕐"
+   - Mensaje final: "¡Pedido recibido! El equipo de La Felicitta lo está preparando 🍔🔥"
 
 REGLAS:
 - Responde en español, amable y breve (máximo 4 líneas)
 - SIEMPRE incluye precios cuando menciones productos
-- Calcula el total cuando el cliente confirme su pedido
+- SIEMPRE suma el delivery al total cuando sea delivery
+- SIEMPRE indica el tiempo estimado de 20 minutos al confirmar el pedido
 - Sugiere combos o adicionales naturalmente
 - Nunca digas que no sabes los precios`;
 
@@ -172,5 +186,5 @@ client.on("message", async (msg) => {
   }
 });
 
-console.log("🚀 Iniciando bot con IA Claude + menú completo...");
+console.log("🚀 Iniciando bot La Felicitta con IA Claude...");
 client.initialize();
