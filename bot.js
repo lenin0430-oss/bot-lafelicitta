@@ -35,10 +35,11 @@ DATOS:
 - Pagos: transferencia, efectivo, tarjetas (solo local)
 
 DELIVERY — ZONAS Y PRECIOS:
-- Centro Iquique: $2.500
-- Tadeo Hankee: $3.000
-- Sector Sur: $4.000
+- Centro Iquique (Baquedano, Lynch, Plaza Prat, Barros Arana, calles del centro histórico): $2.500
+- Sector Medio (Tadeo Hankee, Cavancha, Playa Brava, sector costero): $3.000
+- Sector Sur (Dos Oriente, Tres Oriente, Cuatro Oriente, Las Dunas, Alto Molle, y todo lo que esté al sur del centro): $4.000
 - Preparación: ~20 minutos
+- REGLA IMPORTANTE: Si el cliente da una dirección y NO puedes identificar claramente la zona, SIEMPRE pregunta: "¿Tu dirección está en el centro, sector medio (Cavancha/Playa Brava) o sector sur de Iquique?" antes de cobrar el delivery.
 
 MENÚ COMPLETO CON PRECIOS:
 HAMBURGUESAS: La Felicitta $2.500 | Especial $4.500 | Super $5.500 | Doble $6.500 | La Pelua $7.500 | Triple $8.000
@@ -57,7 +58,7 @@ BEBIDAS: Gaseosa 500cc $1.200 | 1.5L $2.000 | Naranja/Piña $1.800 | Mango/Marac
 
 PARA CONFIRMAR PEDIDO incluye siempre:
 - Lista de productos con precios
-- Costo delivery si aplica
+- Costo delivery según zona
 - TOTAL FINAL (sumando delivery)
 - "Listo en ~20 minutos 🕐"
 - "¡Pedido recibido! Lo estamos preparando 🍔🔥"`;
