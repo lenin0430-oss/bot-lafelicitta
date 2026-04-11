@@ -11,7 +11,7 @@ function estaAbierto() {
 }
 
 const conversaciones = new Map();
-const procesando = new Set(); // evitar doble respuesta
+const procesando = new Set();
 
 function obtenerHistorial(numero) {
   if (!conversaciones.has(numero)) conversaciones.set(numero, []);
@@ -26,18 +26,21 @@ function agregarMensaje(numero, rol, contenido) {
 
 async function responderConIA(numero, mensajeCliente) {
   const historial = obtenerHistorial(numero);
-  const systemPrompt = `Eres el asistente de pedidos de La Felicitta, restaurante venezolano-chileno en Iquique. Responde SIEMPRE en máximo 3 líneas cortas. Sé directo y amable.
+
+  const systemPrompt = `Eres el asistente de pedidos de La Felicitta, restaurante venezolano-chileno en Iquique. Responde siempre en máximo 3 líneas cortas. Sé directo y amable.
 
 DATOS:
 - Dirección: Barros Arana 504, Iquique
 - Horario: 08:30-00:00 todos los días
 - Pagos: transferencia, efectivo, tarjetas (solo local)
 
-DELIVERY:
-- Centro Iquique: $2.500 | Tadeo Hankee: $3.000 | Sector Sur: $4.000
+DELIVERY — ZONAS Y PRECIOS:
+- Centro Iquique: $2.500
+- Tadeo Hankee: $3.000
+- Sector Sur: $4.000
 - Preparación: ~20 minutos
 
-MENÚ Y PRECIOS:
+MENÚ COMPLETO CON PRECIOS:
 HAMBURGUESAS: La Felicitta $2.500 | Especial $4.500 | Super $5.500 | Doble $6.500 | La Pelua $7.500 | Triple $8.000
 XL (200g+papas): Estrella $6.500 | Luna $7.500 | Casa Club $8.500 | Ahumada $9.500
 PERROS: Luka $1.000 | Callejero $2.000 | Perro Loco/Chileno/Americano $3.000 | Peluo $3.500 | Premium venezolano/chileno $3.500 | Premium americano/BBQ $3.990
@@ -53,9 +56,9 @@ TEQUEÑOS: Queso 25cm $2.000 | JQ 25cm $2.500 | 4u $2.500 | 8u $4.600 | 12u $6.9
 BEBIDAS: Gaseosa 500cc $1.200 | 1.5L $2.000 | Naranja/Piña $1.800 | Mango/Maracuyá $2.000 | Agua $800 | Café $800 | C/Leche $1.000 | Té $800 | Chocolate $1.200
 
 PARA CONFIRMAR PEDIDO incluye siempre:
-- Lista productos + precios
+- Lista de productos con precios
 - Costo delivery si aplica
-- TOTAL FINAL
+- TOTAL FINAL (sumando delivery)
 - "Listo en ~20 minutos 🕐"
 - "¡Pedido recibido! Lo estamos preparando 🍔🔥"`;
 
@@ -89,6 +92,7 @@ const client = new Client({
       "--no-zygote",
       "--disable-gpu",
       "--single-process",
+      "--user-data-dir=/tmp/chrome-data",
     ],
   },
 });
@@ -127,7 +131,6 @@ client.on("message", async (msg) => {
     const texto = (msg.body || "").trim();
     if (!texto) return;
 
-    // Evitar procesar el mismo mensaje dos veces
     if (procesando.has(numero)) return;
     procesando.add(numero);
 
@@ -149,7 +152,7 @@ client.on("message", async (msg) => {
 
   } catch (error) {
     console.error("❌ Error:", error.message);
-    procesando.delete(msg.from);
+    procesando.delete(msg?.from);
     try {
       await msg.reply(`Hola! Somos *La Felicitta* 🍔\nEscríbenos en un momento, te atendemos altiro.\n📍 Barros Arana 504 · 08:30–00:00`);
     } catch (e) {}
